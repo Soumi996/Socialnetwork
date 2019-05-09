@@ -1,0 +1,16 @@
+{
+    "/" : "Get All Routes",
+    "/user" : "Get All Users",
+    "/post" : "Post an Article",
+    "/login" : "To Login a User",
+    "/allposts" : "All Posts of Users",
+    "/register" : "Register User",
+    "/signout" : "Signout User",
+    "/allusers" : "Get All Users Details",
+    "/singleuser" : "Get a Single User",
+    "/updateuser" : "Update a User",
+    "/deleteuser" : "Delete a User",
+    "/yourposts" : "See All Your Posts",
+    "/deletepost/:id" : "Delete a Particular post",
+    "/updatepost/:id" : "Update a Particular post"
+}
