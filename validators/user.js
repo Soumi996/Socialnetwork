@@ -12,12 +12,12 @@ const register = (req, res, next) => {
       max: 20
     });
   // Check for errors
-  const errors = req.validationErrors();
+  const message = req.validationErrors();
 
   // If error show the first one as they happens
-  if (errors) {
-    const firstError = errors.map(e => e.msg)[0];
-    return res.status(400).json({ error: firstError });
+  if (message) {
+    const regError = message.map(e => e.msg)[0];
+    return res.status(400).json({ message: regError, status: false });
   }
 
   // Procceed to next midleware
@@ -28,20 +28,19 @@ const login = (req, res, next) => {
   // Email
   req.check("email", "Please enter a email").notEmpty();
   // Password
-  req.check("hashed_password", "Please enter a password").notEmpty();
+  req.check("password", "Please enter a password").notEmpty();
   req
-    .check("hashed_password", "password should be atleast 6 words long")
+    .check("password", "password should be atleast 6 words long")
     .isLength({
       min: 6,
       max: 20
     });
   // Check for errors
-  const errors = req.validationErrors();
-
+  const message = req.validationErrors();
   // If error show the first one as they happens
-  if (errors) {
-    const firstError = errors.map(e => e.msg)[0];
-    return res.status(400).json({ error: firstError });
+  if (message) {
+    const logError = message.map(e => e.msg)[0];
+    return res.status(400).json({ message: logError, status: false });
   }
 
   // Procceed to next midleware

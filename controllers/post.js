@@ -23,7 +23,7 @@ const getPost = (req, res) => {
 // Params : GET ID OF CURRENT USER
 const userPost = (req, res) => {
   Post.find({ postedBy: req.decoded.id }, (err, response) => {
-    res.status(400).json({
+    res.status(200).json({
       YourPosts: response
     });
   })
@@ -34,25 +34,19 @@ const userPost = (req, res) => {
 // Create a new Post
 // Params : GET FILE DATA and GET BODY DATA
 const createPost = (req, res, next) => {
+
+  // Content Response
+  if(req.body.title.length <= 4 || req.body.body.length <= 10){
+    if(req.file !== undefined){
+      return res.status(400).json({ message: contentResponse(req.body.title.length, req.body.body.length,req.file.path) });
+    }else{
+      return res.status(400).json({ message: contentResponse_v2(req.body.title.length, req.body.body.length) });
+    }
+  }
   
   // Check if the File is uploaded or not
   if(req.file === undefined){
     return res.status(400).json({ message: "Please Upload a File" });
-  }
-
-  // Check the length of the title and body
-  if (ContentChecker(req.body.title.length, req.body.body.length) === 1) {
-    deleteFile(req.file.path);
-    return res.status(400).json({ message: "Title Required" });
-  } else if (ContentChecker(req.body.title.length, req.body.body.length) === 2) {
-    deleteFile(req.file.path);
-    return res.status(400).json({ message: "Title should be atleast 4 letter" });
-  }else if (ContentChecker(req.body.title.length, req.body.body.length) === 3) {
-    deleteFile(req.file.path);
-    return res.status(400).json({ message: "Body Required" });
-  }else if (ContentChecker(req.body.title.length, req.body.body.length) === 4) {
-    deleteFile(req.file.path);
-    return res.status(400).json({ message: "Body should be atleast 10 letter" });
   }
   
   // Checking the File Type
@@ -72,9 +66,7 @@ const createPost = (req, res, next) => {
   post.photo = req.file.path;
   // Posted By Id
   post.postedBy = req.decoded.id;
-  post
-  .save()
-  .then(result => {
+  post.save().then(result => {
     res.status(200).json({
       post: result
     });
@@ -83,28 +75,36 @@ const createPost = (req, res, next) => {
 
 // Update Post of current user
 // Params : GET FILE DATA and GET BODY DATA and GET USER ID
-const updatePost = (req, res) => {
-  
-  // Check if the File is uploaded or not
-  if(req.file === undefined){
-    return res.status(400).json({ message: "Please Upload a File" });
+const updatePost = (req, res, err) => {
+
+  // Content Response
+  if(req.body.title.length <= 4 || req.body.body.length <= 10){
+    if(req.file !== undefined){
+      return res.status(400).json({ message: contentResponse(req.body.title.length, req.body.body.length,req.file.path) });
+    }else{
+      return res.status(400).json({ message: contentResponse_v2(req.body.title.length, req.body.body.length) });
+    }
   }
 
-  // Check the length of the title and body
-  if (ContentChecker(req.body.title.length, req.body.body.length) === 1) {
-    deleteFile(req.file.path);
-    return res.status(400).json({ message: "Title Required" });
-  } else if (ContentChecker(req.body.title.length, req.body.body.length) === 2) {
-    deleteFile(req.file.path);
-    return res.status(400).json({ message: "Title should be atleast 4 letter" });
-  }else if (ContentChecker(req.body.title.length, req.body.body.length) === 3) {
-    deleteFile(req.file.path);
-    return res.status(400).json({ message: "Body Required" });
-  }else if (ContentChecker(req.body.title.length, req.body.body.length) === 4) {
-    deleteFile(req.file.path);
-    return res.status(400).json({ message: "Body should be atleast 10 letter" });
-  }
-  
+  // While updating no file changes takes place
+  if(req.file === undefined){
+    Post.find({ _id: req.params.id }, (err, response) => {
+      if (response.length > 0){
+        Post.updateOne({ _id: req.params.id },{ title: req.body.title, body: req.body.body },(err, response) => {
+            return res
+              .status(200)
+              .json({ message: "Post Successfully Updated" });
+          }
+        );
+      }else{
+        return res
+          .status(400)
+          .json({ message: "No Post Found" });
+      }
+    });
+    return;
+  }  
+ 
   // Checking the File Type
   if(FileTypeChecker(req.file) === false){
     deleteFile(req.file.path);
@@ -117,56 +117,55 @@ const updatePost = (req, res) => {
     return res.status(400).json({ message: "Not More Than 5 MB file" });
   }   
 
-  Post.find({ _id: req.params.id }, (err, response) => {
-    if (err) {
-      return res.status(401).json({
-        message: "Post notFound"
-      });
-    }
+  // Delete old photo and update new photo
+  Post.find({ _id: req.params.id }, (err, response) => {    
     if (response.length === 1) {
-      deleteFile(response[0].photo);
-    } else {
-      return res.status(401).json({
-        message: "Post notFound"
-      });
+      if (req.file.path !== response[0].photo){
+        deleteFile(response[0].photo);
+      }else if (req.file.path === response[0].photo){
+        deleteFile(response[0].photo);
+      }
     }
-    Post.updateOne(
-      { _id: req.params.id },
-      { title: req.body.title, body: req.body.body, photo: req.file.path },
+
+    // Update the entire post with new Photo
+    Post.updateOne({ _id: req.params.id },{ title: req.body.title, body: req.body.body, photo: req.file.path },
       (err, response) => {
-        if (err) {
-          return res.json({
-            success: false,
-            message: "Some Error Happed"
-          });
-        } else {
-          return res.json({
-            success: true,
-            message: "Post Successfully updated"
-          });
+        if(response.nModified === 0){
+          return res.status(400).json({message: "No Post Found"});
+        }else{
+          return res.status(200).json({ message: "Post Successfully Updated" });
         }
       }
     );
   });
-};
+}
 
 // Delete Post of current user
 // Params : GET USER ID
 const deletePost = (req, res) => {
+
+  // Checking the post actually exist or not
   Post.find({ _id: req.params.id }, (err, response) => {
     if (err) {
       return res.status(401).json({
         message: "Post notFound"
       });
     }
+
+    // If the post exist then delete 
+    // the image related to the post
     if(response.length === 1){
-      deleteFile(response[0].photo);
+      console.log(response[0].photo);
+      if (response[0].photo !== undefined){
+       deleteFile(response[0].photo); 
+      }
     }else{
       return res.status(401).json({
         message: "Post notFound"
       });
     }
     
+    // Deleteing the Post
     Post.deleteOne({ _id: req.params.id }, err => {
       if (err) {
         return res.status(401).json({
@@ -196,6 +195,7 @@ const storage = multer.diskStorage({
 
 // Check the File Type
 const FileTypeChecker = (file) => {
+  end(file.mimetype);
   if (file.mimetype == "image/jpeg" || file.mimetype == "image/png"){
     return true;
   }else{
@@ -205,6 +205,7 @@ const FileTypeChecker = (file) => {
 
 // Check the File Size
 const FileSizeChecker = (file) => {
+  end(file);
   if (file.size >= 1024 * 1024 * 5) {
     return false;
   }
@@ -223,8 +224,41 @@ const ContentChecker = (title, body) => {
   }
 }
 
+// Checking Title and body
+const contentResponse = (titleLength, bodyLength, filepath) => {
+  // Check the length of the title and body
+  if (ContentChecker(titleLength, bodyLength) === 1) {
+    deleteFile(filepath);
+    return "Title Required";
+  } else if (ContentChecker(titleLength, bodyLength) === 2) {
+    deleteFile(filepath);
+    return "Title should be atleast 4 letter";
+  }else if (ContentChecker(titleLength, bodyLength) === 3) {
+    deleteFile(filepath);
+    return "Body Required";
+  }else if (ContentChecker(titleLength, bodyLength) === 4) {
+    deleteFile(filepath);
+    return "Body should be atleast 10 letter";
+  }
+}
+
+// Checking Title and body
+const contentResponse_v2 = (titleLength, bodyLength) => {
+  // Check the length of the title and body
+  if (ContentChecker(titleLength, bodyLength) === 1) {
+    return "Title Required";
+  } else if (ContentChecker(titleLength, bodyLength) === 2) {
+    return "Title should be atleast 4 letter";
+  }else if (ContentChecker(titleLength, bodyLength) === 3) {
+    return "Body Required";
+  }else if (ContentChecker(titleLength, bodyLength) === 4) {
+    return "Body should be atleast 10 letter";
+  }
+}
+
 // Delete a File
 const deleteFile = (path) => {
+  end(path);
   fs.unlinkSync(path);
 }
 
@@ -232,6 +266,12 @@ const deleteFile = (path) => {
 const upload = multer({
   storage: storage
 });
+
+const end = (data) => {
+  if(data === undefined){
+    return;
+  }
+}
 
 module.exports = {
   getPost,

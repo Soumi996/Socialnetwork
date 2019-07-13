@@ -53,6 +53,6 @@ app.use('/', userRoutes)
 
 
 // Server Listening
-app.listen(process.env.PORT || 8080,() => {
+app.listen(process.env.PORT || 3001,() => {
     console.log('Listening at Port 3000')
 })

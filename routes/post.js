@@ -5,7 +5,7 @@ const router = express.Router()
 
 // GET ROUTE 
 // DEF : TO GET ALL THE POST
-// PARAMS : ['RoutePath','TokenValidation','ControllerLogic']
+// PARAMS : ['RoutePath','ControllerLogic']
 router.get("/allposts", getPost);
 
 // POST ROUTE

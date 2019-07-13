@@ -88,9 +88,11 @@ const deleteUser = (req, res) => {
 const register = (req, res) => {
   // Checking if user already exist or not
   User.user.findOne({ email: req.body.email }, (err, response) => {
-    if (err) return res.status(400).json({ error: "OOPS ERROR HAPPENED" });
+    if (err) return res.status(400).json({ message: "OOPS ERROR HAPPENED",status: false });
     if (response !== null) {
-      return res.status(403).json({ message: "User Already Exist" });
+      return res
+        .status(403)
+        .json({ message: "User Already Exist", status: false });
     } else {
       // Creating a newUser
       User.hashing(req.body.password, pass => {
@@ -101,7 +103,12 @@ const register = (req, res) => {
         });
         data.save().then(() => {
           res.status(200).json({
-            post: "Signup Successful"
+            message: "Signup Successful"
+          });
+        }).catch(err => {
+          res.status(400).json({
+            message: "Signup Failed",
+            status: false
           });
         });
       });
@@ -112,18 +119,21 @@ const register = (req, res) => {
 // Login User
 const login = (req, res) => {
   User.user.findOne({ email: req.body.email }, (err, response) => {
-    // console.log(response._id);
-    let id = response._id;
-    if (err) return res.status(400).json({ error: "OOPS ERROR HAPPENED" });
-    if (response === null) {
+    // console.log(response);
+    if (err) return res.status(400).json({ message: "OOPS ERROR HAPPENED",status: false });
+    if (response === null || response === undefined) {
       return res
         .status(400)
-        .json({ message: "Please Register YourSelf Or Check Your Email" });
+        .json({
+          message: "Please Check Your Email",
+          status: false
+        });
     } else {
+      let id = response._id;
       let token = jwt.sign(
-        { id: id ,email: response.email, password: response.password },
+        { id: id, email: response.email, password: response.password },
         process.env.JWT_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "5h" }
       );
 
       res.cookie("t", token, { expire: new Date() + 9999 });
@@ -131,11 +141,13 @@ const login = (req, res) => {
       User.Compare(req.body.password, response.password, result => {
         if (result === "Success") {
           res.status(200).json({
-            message: "Bearer " + token
+            message: "Bearer " + token,
+            name: response.name
           });
         } else {
           res.status(401).json({
-            message: "Please Check Your Password"
+            message: "Please Check Your Password",
+            status: false
           });
         }
       });
@@ -167,6 +179,7 @@ const requireSignIn = (req, res, next) => {
             message: "Token is not valid"
           });
         } else {
+          // req.decoded contains all the data
           req.decoded = authorizedData;
           next();
         }

@@ -6,7 +6,7 @@ const router = express.Router();
 // POST ROUTE
 // DEF : LOGIN AND GET TOKEN
 // PARAMS : ['RoutePath','ControllerLogic']
-router.post("/login", login);
+router.post("/login", validator.login , login);
 
 // POST ROUTE
 // DEF : REGISTER YOUR SELF
